@@ -4,9 +4,8 @@ const express = require('express');
 const config = {
     token: process.env.DISCORD_TOKEN,
     port: process.env.PORT || 3000,
-    allowedUsers: process.env.ALLOWED_USERS ? 
-        process.env.ALLOWED_USERS.split(',') : 
-        ['721996501999550485']
+    // ID власника бота. Тільки цей користувач може використовувати команди.
+    ownerId: process.env.OWNER_ID || '721996501999550485'
 };
 
 const app = express();
@@ -379,14 +378,10 @@ client.once('ready', async () => {
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
 
-    const hasManageMessages = interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
-    const isAllowedUser = config.allowedUsers.includes(interaction.user.id);
-    
-    if (!hasManageMessages && !isAllowedUser) {
-        return await interaction.reply({
-            content: 'У вас немає прав для використання цієї команди! Потрібні права **Manage Messages** або бути в списку дозволених користувачів.',
-            flags: [4096]
-        });
+    // Перевірка власника: якщо ID користувача не збігається з ownerId —
+    // команда нічого не робить (без відповіді, без логів, тиша).
+    if (interaction.user.id !== config.ownerId) {
+        return;
     }
 
     const { commandName } = interaction;
@@ -490,7 +485,7 @@ client.on('interactionCreate', async (interaction) => {
                 },
                 {
                     name: 'Права доступу',
-                    value: 'Потрібні права **Manage Messages** або бути в списку дозволених користувачів'
+                    value: 'Команди доступні лише власнику бота (за ID)'
                 },
                 {
                     name: 'Застереження',
