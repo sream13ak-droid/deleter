@@ -31,13 +31,38 @@ app.get('/health', (req, res) => {
 // або сервер випав із кешу) — у такому разі довантажуємо guild напряму через API.
 async function resolveGuild(interaction) {
     if (interaction.guild) return interaction.guild;
-    if (!interaction.guildId) return null;
-    return await client.guilds.fetch(interaction.guildId).catch(() => null);
+
+    if (!interaction.guildId) {
+        console.error('resolveGuild: interaction.guildId відсутній (команда не з сервера?)');
+        return null;
+    }
+
+    const cached = client.guilds.cache.get(interaction.guildId);
+    if (cached) return cached;
+
+    try {
+        return await client.guilds.fetch(interaction.guildId);
+    } catch (error) {
+        console.error(`resolveGuild: не вдалося отримати guild ${interaction.guildId} (спроба 1): ${error.message}`);
+        // Одна повторна спроба з невеликою затримкою — на випадок тимчасового збою Discord API
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            return await client.guilds.fetch(interaction.guildId);
+        } catch (retryError) {
+            console.error(`resolveGuild: не вдалося отримати guild ${interaction.guildId} (спроба 2): ${retryError.message}`);
+            return null;
+        }
+    }
 }
 
 async function resolveMe(guild) {
     if (guild.members.me) return guild.members.me;
-    return await guild.members.fetchMe().catch(() => null);
+    try {
+        return await guild.members.fetchMe();
+    } catch (error) {
+        console.error(`resolveMe: не вдалося отримати member бота для guild ${guild.id}: ${error.message}`);
+        return null;
+    }
 }
 
 const client = new Client({
