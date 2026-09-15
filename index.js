@@ -6,7 +6,7 @@ const config = {
     port: process.env.PORT || 3000,
     allowedUsers: process.env.ALLOWED_USERS ? 
         process.env.ALLOWED_USERS.split(',') : 
-        ['1344598543440019538', '721996501999550485']
+        ['721996501999550485']
 };
 
 const app = express();
